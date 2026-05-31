@@ -1,0 +1,82 @@
+{
+  "name": "affinity-ledger",
+  "version": "1.0.0",
+  "description": "Affinity Ledger — track company gigs, revenue split, and reserves",
+  "main": "electron/main.js",
+  "author": "Affinity",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_OPTIONS='' NODE_ENV=development electron .",
+    "dev": "concurrently -k -n VITE,ELECTRON -c blue,green \"npm:dev:vite\" \"npm:dev:electron\"",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production electron .",
+    "dist:mac": "vite build && electron-builder --mac",
+    "dist:win": "vite build && electron-builder --win",
+    "dist:all": "vite build && electron-builder --mac --win"
+  },
+  "build": {
+    "appId": "com.affinity.ledger",
+    "productName": "Affinity Ledger",
+    "copyright": "Copyright © 2025 Affinity",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.finance",
+      "icon": "build/icon.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "Affinity Ledger",
+      "backgroundColor": "#121212"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "dependencies": {
+    "firebase": "^10.13.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.4.0",
+    "electron-builder": "^26.8.1",
+    "vite": "^5.4.2",
+    "wait-on": "^7.2.0"
+  }
+}
