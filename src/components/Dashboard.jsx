@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useEvents } from '../hooks/useEvents';
 import { useExpenses } from '../hooks/useExpenses';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useUpdateCheck } from '../hooks/useUpdateCheck';
 import { signOut } from '../firebase';
 import { createCompany } from '../hooks/useCompany';
 import AddEventModal from './AddEventModal.jsx';
@@ -41,6 +42,7 @@ export default function Dashboard({ user, company, memberships, role, onSwitch, 
   const { expenses, loading: expensesLoading } = useExpenses(company.id);
   const { tabs } = useTabs(company.id, tabsEnabled);
   const online = useOnlineStatus();
+  const update = useUpdateCheck();
   const [showAdd, setShowAdd] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -114,9 +116,13 @@ export default function Dashboard({ user, company, memberships, role, onSwitch, 
     [filteredTabs],
   );
 
+  // Match the signed-in user to their employee entry by email (from their
+  // verified auth token) — no client needs write access to the company doc.
+  const myEmail = (user.email || '').toLowerCase();
   const myPerms = isOwner
     ? { canAddEvents: true, canCreateInvoices: true }
-    : (company.employees.find((e) => e.uid === user.uid)?.permissions || { canAddEvents: true, canCreateInvoices: false });
+    : (company.employees.find((e) => e.email && e.email.toLowerCase() === myEmail)?.permissions
+        || { canAddEvents: true, canCreateInvoices: false });
 
   // Keep selected items in sync with real-time updates (e.g. after editing)
   useEffect(() => {
@@ -148,6 +154,17 @@ export default function Dashboard({ user, company, memberships, role, onSwitch, 
           <div className="top-brand">Affinity Ledger</div>
         </div>
         <div className="top-right">
+          {update && (
+            <a
+              className="update-badge"
+              href={update.url}
+              target="_blank"
+              rel="noreferrer"
+              title={`Version ${update.version} is available — click to download`}
+            >
+              ↑ Update to {update.version}
+            </a>
+          )}
           {!online && (
             <div className="sync-badge" title="Offline — changes will sync when reconnected">
               <span className="sync-icon">↻</span>

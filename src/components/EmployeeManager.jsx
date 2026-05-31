@@ -71,8 +71,9 @@ export default function TeamPage({ company, user, onClose }) {
           fromName: user.displayName || user.email,
         });
         flash(`Linked and invite sent to ${email}.`);
-      } catch {
-        flash(`Email linked. (Invite email could not be sent.)`);
+      } catch (mailErr) {
+        console.error('EmailJS send failed:', mailErr);
+        setError(`Email linked, but invite failed: ${mailErr.message}`);
       }
     } catch (err) {
       setError(err.message);
@@ -165,9 +166,7 @@ function MemberRow({ emp, onPermToggle, onRemove, onLinkEmail }) {
         {emp.email ? (
           <span className="emp-item-email">
             {emp.email}
-            <span className={`emp-status ${emp.uid ? 'emp-status-linked' : 'emp-status-pending'}`}>
-              {emp.uid ? 'Active' : 'Pending'}
-            </span>
+            <span className="emp-status emp-status-linked">Invited</span>
           </span>
         ) : linking ? (
           <form className="emp-link-row" onSubmit={submitLink}>

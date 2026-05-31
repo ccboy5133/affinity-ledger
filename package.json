@@ -1,6 +1,6 @@
 {
   "name": "affinity-ledger",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Affinity Ledger — track company gigs, revenue split, and reserves",
   "main": "electron/main.js",
   "author": "Affinity",
@@ -24,6 +24,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ccboy5133",
+        "repo": "affinity-ledger-downloads"
+      }
+    ],
     "files": [
       "dist/**/*",
       "electron/**/*",

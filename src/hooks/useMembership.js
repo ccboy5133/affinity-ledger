@@ -61,19 +61,10 @@ export async function checkInvitations(email) {
 export async function acceptInvitation(uid, invite, userEmail) {
   const { companyId, companyName, name } = invite;
 
+  // The membership doc (owned by this user) is what grants company access.
+  // Permissions are matched by email on the company doc, so we never write
+  // to the company doc here — keeping company-doc writes owner-only.
   await createEmployeeMembership(uid, { companyId, companyName, name, email: userEmail });
-
-  // Link uid into the company employees array
-  const companyRef = doc(db, 'companies', companyId);
-  const companySnap = await getDoc(companyRef);
-  if (companySnap.exists()) {
-    const employees = (companySnap.data().employees || []).map((emp) => {
-      const e = normalizeEmployee(emp);
-      if (e.email.toLowerCase() === userEmail.toLowerCase()) return { ...e, uid };
-      return e;
-    });
-    await updateDoc(companyRef, { employees, updatedAt: Date.now() });
-  }
 
   await updateDoc(doc(db, 'invites', encodeEmail(userEmail), 'pending', companyId), {
     status: 'accepted', acceptedAt: Date.now(), uid,

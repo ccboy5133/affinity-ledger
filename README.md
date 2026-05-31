@@ -60,43 +60,49 @@ Skipping step 3 will let the app launch but sign-in will fail — Firebase and G
            return request.auth != null &&
              exists(/databases/$(database)/documents/memberships/$(request.auth.uid)/companies/$(companyId));
          }
+         // Owner check that works inside subcollections (reads the parent doc)
+         function ownerByGet() {
+           return request.auth != null &&
+             get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid;
+         }
 
+         // Reads: owner or any member. Writes to the company doc itself
+         // (employees, permissions, ownerId, settings) are OWNER-ONLY, so
+         // members cannot escalate their own permissions or edit the roster.
          allow read:   if isOwner() || isMember() || isLegacyOwner();
          allow create: if request.auth != null && request.resource.data.ownerId == request.auth.uid;
-         allow update: if isOwner() || isMember() || isLegacyOwner();
+         allow update: if (isOwner() || isLegacyOwner())
+                          && request.resource.data.ownerId == resource.data.ownerId;
          allow delete: if isOwner() || isLegacyOwner();
 
+         // Ledger data: owner + members may read/write (this is the shared ledger).
          match /events/{eventId} {
-           allow read, write: if request.auth != null && (
-             get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid
-             || exists(/databases/$(database)/documents/memberships/$(request.auth.uid)/companies/$(companyId))
-             || companyId == request.auth.uid
-           );
+           allow read, write: if ownerByGet() || isMember() || isLegacyOwner();
          }
-
          match /expenses/{expenseId} {
-           allow read, write: if request.auth != null && (
-             get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid
-             || exists(/databases/$(database)/documents/memberships/$(request.auth.uid)/companies/$(companyId))
-             || companyId == request.auth.uid
-           );
+           allow read, write: if ownerByGet() || isMember() || isLegacyOwner();
          }
-
          match /tabs/{tabId} {
-           allow read, write: if request.auth != null && (
-             get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid
-             || exists(/databases/$(database)/documents/memberships/$(request.auth.uid)/companies/$(companyId))
-             || companyId == request.auth.uid
-           );
+           allow read, write: if ownerByGet() || isMember() || isLegacyOwner();
          }
        }
 
        // ── Invitations ──────────────────────────────────────────────────────
        // /invites/{encodedEmail}/pending/{companyId}
+       // Read: only the person whose email it is. Create: the inviting owner.
+       // Update: the invitee accepting/declining their own invite.
        match /invites/{emailKey}/pending/{companyId} {
-         allow read: if request.auth != null && request.auth.token.email != null
-           && emailKey == request.auth.token.email.lower().replace('.', ',');
-         allow write: if request.auth != null;
+         function isInviteOwner() {
+           return request.auth != null &&
+             get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid;
+         }
+         function isOwnEmail() {
+           return request.auth != null && request.auth.token.email != null
+             && emailKey == request.auth.token.email.lower().replace('.', ',');
+         }
+         allow read:   if isOwnEmail() || isInviteOwner();
+         allow create: if isInviteOwner();
+         allow update: if isOwnEmail() || isInviteOwner();
        }
      }
    }

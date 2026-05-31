@@ -50,6 +50,9 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// ── App version (for update checks) ───────────────────────────────────────────
+ipcMain.handle('app:get-version', () => app.getVersion());
+
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 ipcMain.handle('auth:google-signin', async (_event, { clientId, clientSecret }) => {
   if (!clientId || !clientSecret) {
