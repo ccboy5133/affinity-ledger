@@ -1,6 +1,6 @@
 {
   "name": "affinity-ledger",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Affinity Ledger — track company gigs, revenue split, and reserves",
   "main": "electron/main.js",
   "author": "Affinity",
@@ -51,8 +51,25 @@
       ]
     },
     "dmg": {
-      "title": "Affinity Ledger",
-      "backgroundColor": "#121212"
+      "title": "Affinity Ledger ${version}",
+      "backgroundColor": "#121212",
+      "window": {
+        "width": 560,
+        "height": 400
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 200,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 200,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "win": {
       "icon": "build/icon.png",

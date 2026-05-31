@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { saveInvoiceInfo, updateCompanyName, saveCompanyFlags } from '../hooks/useCompany';
+import { fetchUpdateStatus } from '../hooks/useUpdateCheck';
 
 export default function Settings({ company, onClose }) {
   const [tab, setTab] = useState('invoice');
@@ -18,6 +19,7 @@ export default function Settings({ company, onClose }) {
               { id: 'invoice', label: 'Invoice info' },
               { id: 'features', label: 'Features' },
               { id: 'company', label: 'Company' },
+              { id: 'about', label: 'About' },
             ].map(({ id, label }) => (
               <button
                 key={id}
@@ -33,8 +35,64 @@ export default function Settings({ company, onClose }) {
             {tab === 'invoice'  && <InvoiceTab  company={company} />}
             {tab === 'features' && <FeaturesTab company={company} />}
             {tab === 'company'  && <CompanyTab  company={company} />}
+            {tab === 'about'    && <AboutTab />}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── About tab ────────────────────────────────────────────────────────────────
+
+function AboutTab() {
+  const [version, setVersion] = useState('');
+  const [status, setStatus] = useState({ state: 'idle' });
+
+  useEffect(() => {
+    window.ledger?.getVersion?.().then(setVersion).catch(() => {});
+  }, []);
+
+  async function check() {
+    setStatus({ state: 'checking' });
+    const result = await fetchUpdateStatus();
+    setStatus(result);
+  }
+
+  return (
+    <div>
+      <div className="settings-section-title">About</div>
+      <div className="settings-hint">
+        Affinity Ledger{version ? ` — version ${version}` : ''}
+        {window.ledger?.arch ? ` (${window.ledger.arch})` : ''}
+      </div>
+
+      <div className="feature-row" style={{ alignItems: 'center' }}>
+        <div className="feature-row-text">
+          <div className="feature-row-title">Software updates</div>
+          <div className="feature-row-desc">
+            {status.state === 'idle' && 'Check whether a newer version is available for your Mac.'}
+            {status.state === 'checking' && 'Checking for updates…'}
+            {status.state === 'current' && `You're up to date (version ${status.current}).`}
+            {status.state === 'available' && `Version ${status.latest} is available — you have ${status.current}.`}
+            {status.state === 'error' && status.message}
+          </div>
+        </div>
+        {status.state === 'available' && (status.assetUrl || status.releaseUrl) ? (
+          <a
+            className="btn-primary"
+            href={status.assetUrl || status.releaseUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            Download {status.latest}
+          </a>
+        ) : (
+          <button className="btn-secondary" onClick={check} disabled={status.state === 'checking'}>
+            {status.state === 'checking' ? 'Checking…' : 'Check for updates'}
+          </button>
+        )}
       </div>
     </div>
   );

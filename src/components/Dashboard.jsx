@@ -157,12 +157,12 @@ export default function Dashboard({ user, company, memberships, role, onSwitch, 
           {update && (
             <a
               className="update-badge"
-              href={update.url}
+              href={update.assetUrl || update.releaseUrl}
               target="_blank"
               rel="noreferrer"
-              title={`Version ${update.version} is available — click to download`}
+              title={`Version ${update.latest} is available — click to download`}
             >
-              ↑ Update to {update.version}
+              ↑ Update to {update.latest}
             </a>
           )}
           {!online && (

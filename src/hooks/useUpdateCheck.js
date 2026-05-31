@@ -17,29 +17,66 @@ function cmpVer(a, b) {
   return 0;
 }
 
-// Checks the downloads repo's latest release once on mount. Fails silently
-// (e.g. offline) — never blocks or errors the app.
+// Pick the right installer asset for this platform + CPU architecture.
+// macOS arm64 → the *-arm64.dmg, macOS x64 → the .dmg without "arm64",
+// Windows → the .exe installer.
+function pickAsset(assets, platform, arch) {
+  const list = (assets || []).map((a) => ({ name: a.name, url: a.browser_download_url }));
+  if (platform === 'win32') {
+    return list.find((a) => /\.exe$/i.test(a.name)) || null;
+  }
+  // darwin
+  const dmgs = list.filter((a) => /\.dmg$/i.test(a.name));
+  if (arch === 'arm64') {
+    return dmgs.find((a) => /arm64/i.test(a.name)) || null;
+  }
+  // x64 (Intel) → the dmg that is NOT the arm64 one
+  return dmgs.find((a) => !/arm64/i.test(a.name)) || null;
+}
+
+// One-shot check. Returns a status object; never throws.
+export async function fetchUpdateStatus() {
+  try {
+    if (!window.ledger?.getVersion) {
+      return { state: 'error', message: 'Update check unavailable.' };
+    }
+    const current = await window.ledger.getVersion();
+    const platform = window.ledger.platform;
+    const arch = window.ledger.arch;
+
+    const res = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } });
+    if (!res.ok) return { state: 'error', message: `Could not reach update server (${res.status}).`, current };
+
+    const data = await res.json();
+    const latest = (data.tag_name || data.name || '').replace(/^v/i, '');
+    if (!latest) return { state: 'error', message: 'No releases found.', current };
+
+    if (cmpVer(latest, current) > 0) {
+      const asset = pickAsset(data.assets, platform, arch);
+      return {
+        state: 'available',
+        current,
+        latest,
+        assetUrl: asset?.url || null,
+        releaseUrl: data.html_url || RELEASES_PAGE,
+      };
+    }
+    return { state: 'current', current, latest };
+  } catch {
+    return { state: 'error', message: 'Offline or update check failed.' };
+  }
+}
+
+// Auto check on mount — used for the header badge. Returns the status object
+// only when a newer version is available, otherwise null.
 export function useUpdateCheck() {
-  const [update, setUpdate] = useState(null); // { version, url } when newer
+  const [update, setUpdate] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    async function run() {
-      try {
-        if (!window.ledger?.getVersion) return;
-        const current = await window.ledger.getVersion();
-        const res = await fetch(RELEASES_API, { headers: { Accept: 'application/vnd.github+json' } });
-        if (!res.ok) return;
-        const data = await res.json();
-        const latest = data.tag_name || data.name;
-        if (!cancelled && latest && cmpVer(latest, current) > 0) {
-          setUpdate({ version: latest.replace(/^v/i, ''), url: data.html_url || RELEASES_PAGE });
-        }
-      } catch {
-        /* offline or rate-limited — ignore */
-      }
-    }
-    run();
+    fetchUpdateStatus().then((s) => {
+      if (!cancelled && s.state === 'available') setUpdate(s);
+    });
     return () => { cancelled = true; };
   }, []);
 
