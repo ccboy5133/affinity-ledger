@@ -8,3 +8,5 @@ release/
 build/
 ._*
 .DS_Store
+!build/icon.png
+!build/icon.icns
