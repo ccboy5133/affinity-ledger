@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
-import { useMemberships, checkInvitations, migrateOldMembership, createOwnerMembership } from './hooks/useMembership';
+import { useMemberships, checkInvitations, autoAcceptInvitations, migrateOldMembership, createOwnerMembership } from './hooks/useMembership';
 import { findOwnedCompanies } from './hooks/useCompany';
 import { useCompany } from './hooks/useCompany';
 import { signOut } from './firebase';
@@ -35,6 +35,11 @@ export default function App() {
             }
           }
         }
+        // Auto-accept any pending invites so the invited person joins the
+        // company immediately (permissions matched by email on the company doc).
+        await autoAcceptInvitations(user.uid, user.email).catch(() => []);
+
+        // Any invites that couldn't be auto-accepted stay pending for manual handling.
         const invites = await checkInvitations(user.email).catch(() => []);
         setBootstrap({ done: true, invites });
       } catch (err) {

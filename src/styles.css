@@ -516,9 +516,20 @@ input, textarea, select {
   background: rgba(198, 167, 94, 0.15);
   color: var(--emerald);
 }
+/* Invite pending — muted blue (waiting) */
 .emp-status-pending {
-  background: rgba(143, 168, 188, 0.12);
-  color: var(--amber);
+  background: rgba(110, 146, 176, 0.16);
+  color: var(--blue);
+}
+/* Member (accepted) — desaturated green (active / joined) */
+.emp-status-member {
+  background: rgba(122, 154, 122, 0.18);
+  color: var(--green-muted);
+}
+/* Declined — red */
+.emp-status-declined {
+  background: rgba(192, 57, 43, 0.15);
+  color: var(--danger);
 }
 .emp-link-btn {
   background: transparent;

@@ -71,10 +71,63 @@ export async function acceptInvitation(uid, invite, userEmail) {
   });
 }
 
+// Auto-accept every pending invite for this user on login, so an invited
+// person lands straight in the company (with permissions matched by email on
+// the company doc) without a manual "Accept" step. Returns the list of
+// companyIds joined. Safe to call repeatedly — already-accepted invites are
+// filtered out by checkInvitations (status !== 'pending').
+export async function autoAcceptInvitations(uid, userEmail) {
+  if (!userEmail) return [];
+  const pending = await checkInvitations(userEmail).catch(() => []);
+  const joined = [];
+  for (const inv of pending) {
+    try {
+      await acceptInvitation(uid, inv, userEmail);
+      joined.push(inv.companyId);
+    } catch (e) {
+      console.error('Auto-accept failed for', inv.companyId, e);
+    }
+  }
+  return joined;
+}
+
 export async function declineInvitation(userEmail, companyId) {
   await updateDoc(doc(db, 'invites', encodeEmail(userEmail), 'pending', companyId), {
     status: 'declined', declinedAt: Date.now(),
   });
+}
+
+// Owner-side: read the status of all invites this company sent, keyed by email.
+// Returns { [email]: 'pending' | 'accepted' | 'declined' }.
+// Uses a collectionGroup-free approach: the owner reads each invitee's doc by
+// path (allowed by the invite `get` rule for the inviting owner).
+export function useInviteStatuses(companyId, employees) {
+  const [statuses, setStatuses] = useState({});
+
+  useEffect(() => {
+    if (!companyId || !employees?.length) { setStatuses({}); return; }
+    let cancelled = false;
+    const emailed = employees.filter((e) => e.email);
+
+    Promise.all(
+      emailed.map(async (e) => {
+        try {
+          const ref = doc(db, 'invites', encodeEmail(e.email), 'pending', companyId);
+          const snap = await getDoc(ref);
+          return [e.email.toLowerCase(), snap.exists() ? (snap.data().status || 'pending') : null];
+        } catch {
+          return [e.email.toLowerCase(), null];
+        }
+      }),
+    ).then((pairs) => {
+      if (cancelled) return;
+      setStatuses(Object.fromEntries(pairs.filter(([, s]) => s)));
+    });
+
+    return () => { cancelled = true; };
+  }, [companyId, JSON.stringify(employees?.map((e) => e.email) || [])]);
+
+  return statuses;
 }
 
 export async function createInvitation(userEmail, { companyId, companyName, name }) {

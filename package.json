@@ -1,6 +1,6 @@
 {
   "name": "affinity-ledger",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Affinity Ledger — track company gigs, revenue split, and reserves",
   "main": "electron/main.js",
   "author": "Affinity",

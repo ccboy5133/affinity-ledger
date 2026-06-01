@@ -137,10 +137,15 @@ Skipping step 3 will let the app launch but sign-in will fail — Firebase and G
              get(/databases/$(database)/documents/companies/$(companyId)).data.ownerId == request.auth.uid;
          }
          function isOwnEmail() {
+           // NOTE: replace() uses a REGEX — the dot must be escaped as '\\.'
+           // ('.' would match any character and corrupt the key).
            return request.auth != null && request.auth.token.email != null
-             && emailKey == request.auth.token.email.lower().replace('.', ',');
+             && emailKey == request.auth.token.email.lower().replace('\\.', ',');
          }
-         allow read:   if isOwnEmail() || isInviteOwner();
+         // list/get by the invitee (their email == the key) — no get() needed,
+         // so collection queries from the invited user succeed.
+         allow list: if isOwnEmail();
+         allow get:  if isOwnEmail() || isInviteOwner();
          allow create: if isInviteOwner();
          allow update: if isOwnEmail() || isInviteOwner();
        }

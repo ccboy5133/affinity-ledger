@@ -6,6 +6,7 @@ import {
   linkEmployeeEmail,
 } from '../hooks/useCompany';
 import { sendInviteEmail } from '../utils/email';
+import { useInviteStatuses } from '../hooks/useMembership';
 
 const PERMISSIONS = [
   { key: 'canAddEvents',      label: 'Events' },
@@ -18,6 +19,8 @@ export default function TeamPage({ company, user, onClose }) {
   const [addError, setAddError] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  const inviteStatuses = useInviteStatuses(company.id, company.employees);
 
   function flash(msg) {
     setSuccess(msg);
@@ -117,6 +120,7 @@ export default function TeamPage({ company, user, onClose }) {
                 <MemberRow
                   key={emp.name}
                   emp={emp}
+                  status={emp.email ? (inviteStatuses[emp.email.toLowerCase()] || 'pending') : null}
                   onPermToggle={handlePermToggle}
                   onRemove={handleRemove}
                   onLinkEmail={handleLinkEmail}
@@ -136,7 +140,13 @@ export default function TeamPage({ company, user, onClose }) {
 
 // ─── Member row ───────────────────────────────────────────────────────────────
 
-function MemberRow({ emp, onPermToggle, onRemove, onLinkEmail }) {
+const STATUS_LABELS = {
+  pending:  { label: 'Invite pending', cls: 'emp-status-pending' },
+  accepted: { label: 'Member',         cls: 'emp-status-member' },
+  declined: { label: 'Declined',       cls: 'emp-status-declined' },
+};
+
+function MemberRow({ emp, status, onPermToggle, onRemove, onLinkEmail }) {
   const [selectedPerm, setSelectedPerm] = useState('');
   const [linking, setLinking] = useState(false);
   const [linkEmail, setLinkEmail] = useState('');
@@ -166,7 +176,10 @@ function MemberRow({ emp, onPermToggle, onRemove, onLinkEmail }) {
         {emp.email ? (
           <span className="emp-item-email">
             {emp.email}
-            <span className="emp-status emp-status-linked">Invited</span>
+            {(() => {
+              const s = STATUS_LABELS[status] || STATUS_LABELS.pending;
+              return <span className={`emp-status ${s.cls}`}>{s.label}</span>;
+            })()}
           </span>
         ) : linking ? (
           <form className="emp-link-row" onSubmit={submitLink}>
