@@ -2,6 +2,46 @@
 
 A desktop app (Electron + React) for tracking company gigs, revenue split, and cash reserves. Data persists in Firebase Firestore. Auth is Google Sign-In via a loopback OAuth flow inside Electron.
 
+## Installing the app
+
+Download the latest installer from the
+[**Downloads → Releases**](https://github.com/ccboy5133/affinity-ledger-downloads/releases/latest) page.
+
+| Your computer | File |
+|---|---|
+| Mac — Apple Silicon (M1–M4) | `Affinity-Ledger-<version>-arm64.dmg` |
+| Mac — Intel | `Affinity-Ledger-<version>.dmg` |
+| Windows | `Affinity Ledger Setup <version>.exe` |
+
+**macOS:** open the `.dmg` and drag **Affinity Ledger** onto the **Applications** folder.
+
+### "Affinity Ledger is damaged and can't be opened" (macOS)
+
+This is **not** a broken download. The app isn't signed with a paid Apple
+certificate, so macOS quarantines it and shows a misleading "damaged" message.
+To clear it, open **Terminal** and run:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Affinity Ledger.app"
+```
+
+Then open the app normally. You only have to do this once per install.
+
+> Want to remove this step for everyone? It requires an active **Apple Developer
+> membership ($99/yr)** so the app can be code-signed and notarized. Until then,
+> the command above is the workaround.
+
+**Windows:** run the `.exe`. SmartScreen may warn (unsigned) — click
+**More info → Run anyway** (one time).
+
+### Updating
+
+In the app, go to **Settings → About → Check for updates** (or click the
+"Update available" badge in the header). It links to the correct installer for
+your platform and architecture. Download it, drag it into Applications, and
+choose **Replace** when prompted — your data is stored in the cloud and is not
+affected.
+
 ## Apple SSO note
 
 You asked: *do I need an Apple Developer account for Apple SSO?* Yes — Sign in with Apple requires a paid Apple Developer membership ($99/yr) plus a Services ID, Team ID, and signing key. Because of that, this build uses **Google Sign-In via Firebase Auth** instead. You can add Apple later by enabling the Apple provider in Firebase Auth once you have a developer account.
